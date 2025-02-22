@@ -101,6 +101,7 @@ extern uint64 sys_unlink(void);
 extern uint64 sys_link(void);
 extern uint64 sys_mkdir(void);
 extern uint64 sys_close(void);
+extern uint64 sys_trace(void);
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -126,7 +127,36 @@ static uint64 (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
+[SYS_trace]   sys_trace,
 };
+
+void print_trace(int sys_num, int mask, int pid, int ret) {
+    switch (sys_num) {
+        case SYS_fork:   if ((1 << SYS_fork) & mask)   printf("%d: syscall fork -> %d\n", pid, ret); break;
+        case SYS_exit:   if ((1 << SYS_exit) & mask)   printf("%d: syscall exit -> %d\n", pid, ret); break;
+        case SYS_wait:   if ((1 << SYS_wait) & mask)   printf("%d: syscall wait -> %d\n", pid, ret); break;
+        case SYS_pipe:   if ((1 << SYS_pipe) & mask)   printf("%d: syscall pipe -> %d\n", pid, ret); break;
+        case SYS_read:   if ((1 << SYS_read) & mask)   printf("%d: syscall read -> %d\n", pid, ret); break;
+        case SYS_kill:   if ((1 << SYS_kill) & mask)   printf("%d: syscall kill -> %d\n", pid, ret); break;
+        case SYS_exec:   if ((1 << SYS_exec) & mask)   printf("%d: syscall exec -> %d\n", pid, ret); break;
+        case SYS_fstat:  if ((1 << SYS_fstat) & mask)  printf("%d: syscall fstat -> %d\n", pid, ret); break;
+        case SYS_chdir:  if ((1 << SYS_chdir) & mask)  printf("%d: syscall chdir -> %d\n", pid, ret); break;
+        case SYS_dup:    if ((1 << SYS_dup) & mask)    printf("%d: syscall dup -> %d\n", pid, ret); break;
+        case SYS_getpid: if ((1 << SYS_getpid) & mask) printf("%d: syscall getpid -> %d\n", pid, ret); break;
+        case SYS_sbrk:   if ((1 << SYS_sbrk) & mask)   printf("%d: syscall sbrk -> %d\n", pid, ret); break;
+        case SYS_sleep:  if ((1 << SYS_sleep) & mask)  printf("%d: syscall sleep -> %d\n", pid, ret); break;
+        case SYS_uptime: if ((1 << SYS_uptime) & mask) printf("%d: syscall uptime -> %d\n", pid, ret); break;
+        case SYS_open:   if ((1 << SYS_open) & mask)   printf("%d: syscall open -> %d\n", pid, ret); break;
+        case SYS_write:  if ((1 << SYS_write) & mask)  printf("%d: syscall write -> %d\n", pid, ret); break;
+        case SYS_mknod:  if ((1 << SYS_mknod) & mask)  printf("%d: syscall mknod -> %d\n", pid, ret); break;
+        case SYS_unlink: if ((1 << SYS_unlink) & mask) printf("%d: syscall unlink -> %d\n", pid, ret); break;
+        case SYS_link:   if ((1 << SYS_link) & mask)   printf("%d: syscall link -> %d\n", pid, ret); break;
+        case SYS_mkdir:  if ((1 << SYS_mkdir) & mask)  printf("%d: syscall mkdir -> %d\n", pid, ret); break;
+        case SYS_close:  if ((1 << SYS_close) & mask)  printf("%d: syscall close -> %d\n", pid, ret); break;
+        case SYS_trace:  if ((1 << SYS_trace) & mask)  printf("%d: syscall trace -> %d\n", pid, ret); break;
+        default: printf("Error: Unkown syscall\n"); break;
+    }
+}
 
 void
 syscall(void)
@@ -139,6 +169,7 @@ syscall(void)
     // Use num to lookup the system call function for num, call it,
     // and store its return value in p->trapframe->a0
     p->trapframe->a0 = syscalls[num]();
+    print_trace(num, p->trace_mask,p->pid, p->trapframe->a0);
   } else {
     printf("%d %s: unknown sys call %d\n",
             p->pid, p->name, num);

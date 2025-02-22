@@ -1,0 +1,4 @@
+usertrap()
+0x7, SYS_wait
+supervisor//
+lw	a3,0(zero)
